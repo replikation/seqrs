@@ -89,6 +89,7 @@ fn main() -> Result<()> {
 
         let mut nb_reads = 0;
         let mut nb_bases = 0;
+        let mut vector_n = Vec::new();
         
         while let Some(Ok(record)) = records.next() {
             nb_reads += 1;
@@ -96,9 +97,13 @@ fn main() -> Result<()> {
             //println!("{:?}", record.seq());
 
             // We search for every "N" (index 78) within each record.seq()
+            //https://stackoverflow.com/questions/48028913/how-do-i-match-to-a-pattern-like-usize-u32
             for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
                 //write!(f, "{}: {}", count, v)?;
                 println!("{}: {}", record.id(), count);
+                // evtl. selber counten mit +1
+                vector_n.push([record.id(), count]);
+
             }
 
         }
