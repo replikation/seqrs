@@ -1,5 +1,5 @@
 # seqrs
-sequence tools via rust
+sequence repair
 
 ## Installation
 * install rust - done
