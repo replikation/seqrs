@@ -5,6 +5,7 @@ they are autodownloaded when compiling
 */
 
 // external crate
+extern crate bio;
 
 /// libraries
 use structopt::StructOpt; // easy to use args via the #[derive]
@@ -16,6 +17,10 @@ use std::fs::File;
 /// rust-bio
 use bio::io::fasta;
 use bio::io::bed;
+// use crate::bed::strand;
+// use bio_types::strand;
+
+use bio_types::strand::{Strand};
 
 /* 
 STRUCTs
@@ -58,6 +63,7 @@ struct Argparser {
 #[derive(Debug)]
 struct CustomError(String);
 
+
 /*
 The main function 
 */
@@ -89,23 +95,18 @@ fn main() -> Result<()> {
 
         let mut nb_reads = 0;
         let mut nb_bases = 0;
-        let mut vector_n = Vec::new();
+
         
         while let Some(Ok(record)) = records.next() {
             nb_reads += 1;
             nb_bases += record.seq().len();
-            //println!("{:?}", record.seq());
 
             // We search for every "N" (index 78) within each record.seq()
-            //https://stackoverflow.com/questions/48028913/how-do-i-match-to-a-pattern-like-usize-u32
+            // https://stackoverflow.com/questions/48028913/how-do-i-match-to-a-pattern-like-usize-u32
             for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
-                //write!(f, "{}: {}", count, v)?;
-                println!("{}: {}", record.id(), count);
-                // evtl. selber counten mit +1
-                vector_n.push([record.id(), count]);
 
+                //println!("{}: {}", record.id(), count);
             }
-
         }
         
         // Terminal prints for the user regarding their input
@@ -113,21 +114,36 @@ fn main() -> Result<()> {
         println!("Total number of bases: {}", nb_bases);
 
         /****
-        read through pairs to define their range from the primer table
+        Open the bed file and unwrap the informations
+
+        Reader (bed::Reader::new) has the function "records" or .records() to iterate over records
         *****/
 
-        let mut reader = bed::Reader::new(File::open(&args.primerbed)?);
-        let mut writer = bed::Writer::new(vec![]);
+        let mut bedfile = bed::Reader::new(File::open(&args.primerbed)?);
 
-        for record in reader.records() {
-            let rec = record.expect("Error reading record.");
+        for record in bedfile.records() {
             
-            //println!("{:?}: {:?}", rec.name(), rec.strand());
+            // unwraping the record, all fields are here: https://docs.rs/bio/0.33.0/bio/io/bed/struct.Record.html
+            // using .expect instead of .unwrap to include error code
+            let recorddata = record.expect("Error reading record.");
             
-            writer.write(&rec).expect("Error writing record.");
-
         
-        }
+            match recorddata.strand() {
+                Some(Strand::Reverse) => println!("{:?} is {:?}", recorddata.name(), recorddata.strand()),
+                Some(Strand::Forward) => println!("{:?}", recorddata.name()),
+                Some(Strand::Unknown) => println!("{:?}", recorddata.name()),
+                _ => println!("no value"),
+                
+
+            }
+            
+
+
+            //writer.write(&rec).expect("Error writing record.");
+
+            };     
+        
+        
 
 
         /****
