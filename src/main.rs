@@ -89,23 +89,37 @@ fn main() -> Result<()> {
         /*************
           rust-bio
           help: https://docs.rs/bio/0.33.0/bio/
+
+
+        Readers (bed::Reader) has the function .records() to iterate over records
+        and the function .new() to create from new input
         ************/
 
-        let mut records = fasta::Reader::new(File::open(&args.genomes)?).records();
+        // open the fasta and bed file
+        let mut fastarecords = fasta::Reader::new(File::open(&args.genomes)?).records();
+        let mut bedfile = bed::Reader::new(File::open(&args.primerbed)?);
 
+        // for statistics
         let mut nb_reads = 0;
         let mut nb_bases = 0;
 
-        
-        while let Some(Ok(record)) = records.next() {
+        // iterate over fasta records
+        while let Some(Ok(record)) = fastarecords.next() {
             nb_reads += 1;
             nb_bases += record.seq().len();
 
             // We search for every "N" (index 78) within each record.seq()
-            // https://stackoverflow.com/questions/48028913/how-do-i-match-to-a-pattern-like-usize-u32
-            for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
+            for (_count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
+            
+            //println!("{}: {}", record.id(), count);
 
-                //println!("{}: {}", record.id(), count);
+   
+                // I NEED HERE NOW TO FIND THE MINIMUM OF ALL FORWARDS STRANDS
+                // makes sense to work here with a data frame like https://docs.rs/polars/0.12.1/polars/
+                // or https://github.com/nevi-me/rust-dataframe
+                // but check if i can somehow work / math with them in a good way
+   
+   
             }
         }
         
@@ -113,49 +127,26 @@ fn main() -> Result<()> {
         println!("Number of genomes: {}", nb_reads);
         println!("Total number of bases: {}", nb_bases);
 
-        /****
-        Open the bed file and unwrap the informations
-
-        Reader (bed::Reader::new) has the function "records" or .records() to iterate over records
-        *****/
-
-        let mut bedfile = bed::Reader::new(File::open(&args.primerbed)?);
-
         for record in bedfile.records() {
             
             // unwraping the record, all fields are here: https://docs.rs/bio/0.33.0/bio/io/bed/struct.Record.html
             // using .expect instead of .unwrap to include error code
             let recorddata = record.expect("Error reading record.");
             
-        
+
+
             match recorddata.strand() {
-                Some(Strand::Reverse) => println!("{:?} is {:?}", recorddata.name(), recorddata.strand()),
-                Some(Strand::Forward) => println!("{:?}", recorddata.name()),
+                Some(Strand::Forward) => println!("{:?} is {:?} with end {}", recorddata.name(), recorddata.strand(), recorddata.end()),
+                Some(Strand::Reverse) => println!("{:?} is {:?} with start {}", recorddata.name(), recorddata.strand(), recorddata.start()),
                 Some(Strand::Unknown) => println!("{:?}", recorddata.name()),
                 _ => println!("no value"),
                 
 
             }
-            
-
-
             //writer.write(&rec).expect("Error writing record.");
-
             };     
         
         
-
-
-        /****
-        Assign each "N" to each primer pair range
-
-        and print these pairs where "assigning is greater than 0"
-        *****/
-
-        // -> just find string and store info in some list. you should be able to "uniq sort" them later on i think?
-        // -> fwd       >> all entries smaller than
-        //              >> min dist to value and list
-        // -> rev
 
         Ok(())
 }
