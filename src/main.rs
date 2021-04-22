@@ -11,8 +11,11 @@ extern crate bio;
 use structopt::StructOpt; // easy to use args via the #[derive]
 use anyhow::{Context, Result}; // for clean as fuck error reports
 //use std::path::PathBuf;
-//use std::io::{self, BufReader};
+//use std::io::{BufReader};
 use std::fs::File;
+use std::fs;
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 
 /// rust-bio
 use bio::io::fasta;
@@ -102,52 +105,57 @@ fn main() -> Result<()> {
         // for statistics
         let mut nb_reads = 0;
         let mut nb_bases = 0;
+        let mut stringbuffer = String::new();
+
+        // quick auto remove
+        fs::remove_file("./my-file.txt")?;
+
+        // storing data       
+        let mut fileoutput = OpenOptions::new()
+                                .write(true)
+                                .create_new(true)
+                                .append(true)
+                                .open("./my-file.txt")
+                                .unwrap();
+
 
         // iterate over fasta records
         while let Some(Ok(record)) = fastarecords.next() {
             nb_reads += 1;
             nb_bases += record.seq().len();
+            println!("{}", record.id());
 
-                // We search for every "N" (index 78) within each record.seq()
-                /*
-                for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
-
-                        if  count > 100 {
-                                //if _count < 100 { continue }
-                                println!("{}: {}", record.id(), count);
-
-                                for recordbed in bedfile.records() {
-                                        let recorddatabed = recordbed.expect("Error reading record.");
-                                        match recorddatabed.strand() {
-                                        Some(Strand::Forward) => if count > 100 {println!("{:?} with end {}, counter: {}", recorddatabed.name(), recorddatabed.end(), count)},
-                                        Some(Strand::Reverse) => println!("{:?} is {:?} with start {}", recorddatabed.name(), recorddatabed.strand(), recorddatabed.start()),
-                                        Some(Strand::Unknown) => println!("{:?}", recorddatabed.name()),
-                                        _ => println!("no value"),
-                                        }
-                                } 
-
-                        }              
-                }
-                */
-
-                // if i could sort a bed file - i could go for the first match
-
-                // help prints
+                // terminal help - tells you all the "Ns" found
+                
                 println!("\x1b[0;31m____These are the N positions____\x1b[0m");
-                for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
-                        println!("{}: {}", record.id(), count);
-                }
+                // for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
+                //         println!("{}: {}", record.id(), count);
+                // }
+                
 
+                // get Primers function
                 println!("\x1b[0;31m____Iterating through the primer sets____\x1b[0m");
                 for recordbed in bedfile.records() {
                         let recorddata = recordbed.expect("Error reading record.");
                         match recorddata.strand() {
                         Some(Strand::Forward) => { 
+                                // We search for every "N" (index 78) within each record.seq()
+
                                 for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
                                         let primerend = recorddata.end() as usize;
-                                        // help message
-                                        if primerend < count && count - primerend < 1200 {
-                                                println!("## Fasta:{} has 'N' at position {} is greater than {} of FPrimer {:?}", record.id(), count, recorddata.end(), recorddata.name());
+                                        // we search now for appropriate forward primers
+                                        if primerend < count && count - primerend < 1200 && count > 100 {
+                                                //println!("## Fasta:{} has 'N' at position {} is greater than {} of FPrimer {:?}", record.id(), count, recorddata.end(), recorddata.name());
+
+                                                // store strings that we need
+                                                stringbuffer.push_str(record.id());
+                                                stringbuffer.push_str("\t");
+                                                stringbuffer.push_str(recorddata.name().unwrap());
+                                                stringbuffer.push_str("\n");
+
+                                                // if let Err(e) = writeln!(fileoutput, "{}", recorddata.name().unwrap()) {
+                                                //         eprintln!("Couldn't write to file: {}", e);
+                                                //     }
                                         }
                                 }
                         },
@@ -155,9 +163,11 @@ fn main() -> Result<()> {
                         Some(Strand::Reverse) => { 
                                 for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
                                         let primerstart = recorddata.start() as usize;
-                                        // help message
+                                        // we search now for appropriate forward primers
+                                        // missing for the if statment : count < (fastalength - 100)
                                         if primerstart > count && primerstart - count < 1200 {
-                                                println!("## Fasta:{} has 'N' at position {} is smaller than {} of RPrimer {:?}", record.id(), count, recorddata.start(), recorddata.name());
+                                                //println!("## Fasta:{} has 'N' at position {} is smaller than {} of RPrimer {:?}", record.id(), count, recorddata.start(), recorddata.name());
+                                                
                                         }
                                 }
                         },
@@ -202,6 +212,20 @@ fn main() -> Result<()> {
         println!("Number of genomes: {}", nb_reads);
         println!("Total number of bases: {}", nb_bases);
 
+        //let src3: String = String::from(r#"o{"livia"}"#);
+        let l = stringbuffer;
+        let l = l.split("\n");
+        let mut vec: Vec<&str> = l.collect();
+        vec.sort() ;
+        vec.dedup() ;
+        vec.remove(0) ;
+        println!("{:?}", vec);
+
+        for i in vec.iter(){                                                                                                                                                   
+                if let Err(e) = writeln!(fileoutput, "{}", i) {
+                eprintln!("Couldn't write to file: {}", e);
+                }                                                                                                                           
+            }  
 
         Ok(())
 }
