@@ -108,11 +108,86 @@ fn main() -> Result<()> {
             nb_reads += 1;
             nb_bases += record.seq().len();
 
-            // We search for every "N" (index 78) within each record.seq()
-            for (_count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
-            
-            //println!("{}: {}", record.id(), count);
+                // We search for every "N" (index 78) within each record.seq()
+                /*
+                for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
 
+                        if  count > 100 {
+                                //if _count < 100 { continue }
+                                println!("{}: {}", record.id(), count);
+
+                                for recordbed in bedfile.records() {
+                                        let recorddatabed = recordbed.expect("Error reading record.");
+                                        match recorddatabed.strand() {
+                                        Some(Strand::Forward) => if count > 100 {println!("{:?} with end {}, counter: {}", recorddatabed.name(), recorddatabed.end(), count)},
+                                        Some(Strand::Reverse) => println!("{:?} is {:?} with start {}", recorddatabed.name(), recorddatabed.strand(), recorddatabed.start()),
+                                        Some(Strand::Unknown) => println!("{:?}", recorddatabed.name()),
+                                        _ => println!("no value"),
+                                        }
+                                } 
+
+                        }              
+                }
+                */
+
+                // if i could sort a bed file - i could go for the first match
+
+                // help prints
+                println!("\x1b[0;31m____These are the N positions____\x1b[0m");
+                for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
+                        println!("{}: {}", record.id(), count);
+                }
+
+                println!("\x1b[0;31m____Iterating through the primer sets____\x1b[0m");
+                for recordbed in bedfile.records() {
+                        let recorddata = recordbed.expect("Error reading record.");
+                        match recorddata.strand() {
+                        Some(Strand::Forward) => { 
+                                for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
+                                        let primerend = recorddata.end() as usize;
+                                        // help message
+                                        if primerend < count && count - primerend < 1200 {
+                                                println!("## Fasta:{} has 'N' at position {} is greater than {} of FPrimer {:?}", record.id(), count, recorddata.end(), recorddata.name());
+                                        }
+                                }
+                        },
+
+                        Some(Strand::Reverse) => { 
+                                for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
+                                        let primerstart = recorddata.start() as usize;
+                                        // help message
+                                        if primerstart > count && primerstart - count < 1200 {
+                                                println!("## Fasta:{} has 'N' at position {} is smaller than {} of RPrimer {:?}", record.id(), count, recorddata.start(), recorddata.name());
+                                        }
+                                }
+                        },
+
+                        Some(Strand::Unknown) => println!("{:?}", recorddata.name()),
+                        _ => continue,
+                        }
+                }
+
+
+
+
+
+                // CLEAN bed file loop
+                // for record in bedfile.records() {
+                //         // unwraping the record, all fields are here: https://docs.rs/bio/0.33.0/bio/io/bed/struct.Record.html
+                //         // using .expect instead of .unwrap to include error code
+                //         let recorddata = record.expect("Error reading record.");
+                        
+
+
+                //         match recorddata.strand() {
+                //         Some(Strand::Forward) => println!("{:?} is {:?} with end {}", recorddata.name(), recorddata.strand(), recorddata.end()),
+                //         Some(Strand::Reverse) => println!("{:?} is {:?} with start {}", recorddata.name(), recorddata.strand(), recorddata.start()),
+                //         Some(Strand::Unknown) => println!("{:?}", recorddata.name()),
+                //         _ => println!("no value"),
+                //         }
+                // //writer.write(&rec).expect("Error writing record.");
+                // };     
+            
    
                 // I NEED HERE NOW TO FIND THE MINIMUM OF ALL FORWARDS STRANDS
                 // makes sense to work here with a data frame like https://docs.rs/polars/0.12.1/polars/
@@ -120,34 +195,16 @@ fn main() -> Result<()> {
                 // but check if i can somehow work / math with them in a good way
    
    
-            }
+           
         }
         
         // Terminal prints for the user regarding their input
         println!("Number of genomes: {}", nb_reads);
         println!("Total number of bases: {}", nb_bases);
 
-        for record in bedfile.records() {
-            
-            // unwraping the record, all fields are here: https://docs.rs/bio/0.33.0/bio/io/bed/struct.Record.html
-            // using .expect instead of .unwrap to include error code
-            let recorddata = record.expect("Error reading record.");
-            
-
-
-            match recorddata.strand() {
-                Some(Strand::Forward) => println!("{:?} is {:?} with end {}", recorddata.name(), recorddata.strand(), recorddata.end()),
-                Some(Strand::Reverse) => println!("{:?} is {:?} with start {}", recorddata.name(), recorddata.strand(), recorddata.start()),
-                Some(Strand::Unknown) => println!("{:?}", recorddata.name()),
-                _ => println!("no value"),
-                
-
-            }
-            //writer.write(&rec).expect("Error writing record.");
-            };     
-        
-        
 
         Ok(())
 }
 
+// rust loops:
+// https://medium.com/qvault/loops-in-rust-breaking-from-nested-loops-26ab508fdce2
