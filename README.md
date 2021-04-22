@@ -6,37 +6,35 @@
 ## Installation from source
 * when iam finished it will be a prober executable currently it can be run via rusts cargo
 
-### install rust if not already on your system
+### 1. install rust (if you dont have it)
 
 ```bash
 # install a gcc compiler if its not available
 sudo apt install build-essential
-# install and go with 1) when prompted
+# install rust and go with 1) when prompted
 curl https://sh.rustup.rs -sSf | sh
 # refresh $PATH or restart terminal
 . ~/.profile
-# clone the git
 ```     
 
-### install seqrs
+### 2. install seqrs
 
 ````bash
 git clone https://github.com/replikation/seqrs.git
 cd seqrs/
 ## test run
 cargo run -- --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.txt
-## install to path
+## build and install to path
 cargo install --path .
 ````
 
 ## run
 
 ````bash
-seqrs --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.txt -a 1200
+seqrs --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.tsv -a 1200
 ````
 
-## results
-you get a tsv file with `fastaheader primername`
+* you get a results.tsv file with the style `fastaheader primername`
 
 ## help
 
