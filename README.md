@@ -3,9 +3,10 @@
 * This small parser/tool aims to tell you which minimum set of primer would be need to repair a genome
 * the main goal was to learn rust a bit so this git is super basic
 
-## Installation
+## Installation from source
 * when iam finished it will be a prober executable currently it can be run via rusts cargo
-* install rust - done
+
+### install rust if not already on your system
 
 ```bash
 # install a gcc compiler if its not available
@@ -15,16 +16,23 @@ curl https://sh.rustup.rs -sSf | sh
 # refresh $PATH or restart terminal
 . ~/.profile
 # clone the git
-git clone https://github.com/replikation/seqrs.git
 ```     
+
+### install seqrs
+
+````bash
+git clone https://github.com/replikation/seqrs.git
+cd seqrs/
+## test run
+cargo run -- --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.txt
+## install to path
+cargo install --path .
+````
 
 ## run
 
 ````bash
-# navigate into the git
-cd seqrs/
-# execute via cargo
-cargo run -- --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.txt
+seqrs --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.txt -a 1200
 ````
 
 ## results
@@ -32,7 +40,7 @@ you get a tsv file with `fastaheader primername`
 
 ## help
 
-`cargo run -- --help`
+`seqrs --help`
 
 ````bash
 seqrs - sequence repair in rust 0.2.0

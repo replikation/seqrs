@@ -15,4 +15,4 @@ Cargo.lock
 /target
 
 # specific
-results.txt
+results.tsv

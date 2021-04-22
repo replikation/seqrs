@@ -164,7 +164,7 @@ fn main() -> Result<()> {
                         let primerstart = recorddata.start() as usize;
                         // we search now for appropriate forward primers
                         // missing for the if statment : count < (fastalength - 100)
-                        if primerstart > count && primerstart - count < args.ampliconsize {
+                        if primerstart > count && primerstart - count < args.ampliconsize && count > 100 {
 
                             // store the results into a strings buffer
                             stringbuffer.push_str(record.id());
