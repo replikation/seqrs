@@ -1,4 +1,4 @@
-# SEQuence Repair via rUst
+# SEQuence Repair via ruSt
 * if you are doing nanopore amplicon sequencing vor SARS-CoV-2 read on, else leave this git :)
 * This small parser/tool aims to tell you which minimum set of primer would be need to repair a genome
 * the main goal was to learn rust a bit so this git is super basic
