@@ -4,7 +4,6 @@
 * the main goal was to learn rust a bit so this git is super basic
 
 ## Installation from source
-* when iam finished it will be a prober executable currently it can be run via rusts cargo
 
 ### 1. install rust (if you dont have it)
 
