@@ -135,10 +135,15 @@ fn main() -> Result<()> {
                         // converting the data to usize to allow comparision
                         let primerend = recorddata.end() as usize;
                         // we search now for appropriate forward primers
-                        if primerend < count && count - primerend < args.ampliconsize && count > 100 {
+                        if primerend < count && count - primerend > 0 && count - primerend < ( args.ampliconsize + 100 ) && count > 80  && record.seq().len() - count > 80 {
 
+                            
                             // store the results into a strings buffer
                             stringbuffer.push_str(record.id());
+                            stringbuffer.push_str("\t");
+                            stringbuffer.push_str(&recorddata.end().to_string());
+                            stringbuffer.push_str("\t");
+                            stringbuffer.push_str("+");
                             stringbuffer.push_str("\t");
                             stringbuffer.push_str(recorddata.name().unwrap());
                             stringbuffer.push_str("\n");
@@ -158,20 +163,23 @@ fn main() -> Result<()> {
                     // development help
                     /* println!("Proccessing fasta: {} with length {}", record.id(), record.seq().len());*/
 
-                    // we get every "N" position now and then we check for primers in the range of 1200bp
+                    // we get every "N" position now and then we check for primers in the range of 1200bp   record.seq().len() - count > 100
                     for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
                         // converting the data to usize to allow comparision
                         let primerstart = recorddata.start() as usize;
                         // we search now for appropriate forward primers
-                        // missing for the if statment : count < (fastalength - 100)
-                        if primerstart > count && primerstart - count < args.ampliconsize && count > 100 {
+                        if primerstart > count && primerstart - count > 0 && primerstart - count < ( args.ampliconsize + 100 ) && count > 80 && record.seq().len() - count > 80 {
 
                             // store the results into a strings buffer
                             stringbuffer.push_str(record.id());
                             stringbuffer.push_str("\t");
+                            stringbuffer.push_str(&recorddata.start().to_string());
+                            stringbuffer.push_str("\t");
+                            stringbuffer.push_str("-");
+                            stringbuffer.push_str("\t");
                             stringbuffer.push_str(recorddata.name().unwrap());
                             stringbuffer.push_str("\n");
-
+                            
                             // development help
                             /* println!("## Fasta:{} has 'N' at position {} is greater than {} of FPrimer {:?}", record.id(), count, recorddata.start(), recorddata.name()); */
                         }
@@ -196,6 +204,13 @@ fn main() -> Result<()> {
     // write vector to file
     for i in vec.iter() {
             if let Err(e) = writeln!(fileoutput, "{}", i) {
+
+                // if + take all - and "-integer" - "+integer" > (amplicon /2) && < (amplicon +100) if truuuuhh -> print to string buffer
+
+                // if - take all + and "-integer" - "+integer" > (amplicon /2) && < (amplicon +100) if truuuuhh -> print to string buffer
+            
+                // evtl. separate both string buffers (+ and - and compare them against each other)
+
             eprintln!("Couldn't write to file: {}", e);
             }                                                                                                                           
         }  
