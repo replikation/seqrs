@@ -33,7 +33,7 @@ cargo install --path .
 seqrs --genomes data/multifasta_v1200.fasta --primerbed data/Primerfiles/V1200/nCoV-2019.bed --results results.tsv -a 1200
 ````
 
-* you get a results.tsv file with the style `fastaheader primername`
+* you get a results.tsv file with the columns `fastaheader forward_primer reverse_primer`
 
 ## help
 
