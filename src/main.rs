@@ -10,21 +10,22 @@ extern crate bio;
 /// libraries
 use structopt::StructOpt; // https://docs.rs/structopt/0.3.21/structopt/
 use anyhow::{Context, Result}; // for clean as fuck error reports
-
-// std stuff
 use std::fs::File;
-//use std::fs;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+use std::time::Instant;
 
-/// rust-bio
+
+/*************
+    rust-bio
+    help: https://docs.rs/bio/0.33.0/bio/
+************/
 use bio::io::fasta;
 use bio::io::bed;
-
 use bio_types::strand::{Strand};
 
 
-
+/// Argpaser
 #[derive(StructOpt)]
 #[structopt(name = "seqrs - sequence repair in rust", about = "Quickly extract primerpairs to amplify missing/masked regions of genomes.")]
 struct Argparser {
@@ -44,19 +45,6 @@ struct Argparser {
     #[structopt(short, long, default_value = "1200")]
     ampliconsize: usize,
 
-/*
-    /// Output file, stdout if not present
-    #[structopt(parse(from_os_str))]
-    output: Option<PathBuf>,
-
-    /// Where to write the output: to `stdout` or `file`
-    #[structopt(short)]
-    out_type: String,
-
-    /// File name: only required when `out-type` is set to `file`
-    #[structopt(name = "FILE", required_if("out-type", "file"))]
-    file_name: Option<String>,
-*/
 }
 
 // Errorcodes for string
@@ -70,6 +58,8 @@ The main function
 
 fn main() -> Result<()> {
 
+
+    let now = Instant::now();
     // we call the arguments from our Cli struct program above 
     let args = Argparser::from_args();
 
@@ -77,31 +67,16 @@ fn main() -> Result<()> {
     let _filecontent = std::fs::read_to_string(&args.genomes)
         .with_context(|| format!("could not read file `{}`", &args.genomes.to_str().unwrap()))?;
 
-    /*************
-        rust-bio
-        help: https://docs.rs/bio/0.33.0/bio/
-
-
-        Readers (bed::Reader) has the function .records() to iterate over records
-        and the function .new() to create from new input
-    ************/
-
-    // open the fasta and bed file
-    //let mut reader = fasta::Reader::new(File::open(&args.genomes)?);
-    //let mut bedfile = bed::Reader::new(File::open(&args.primerbed)?);
-
     // stringbuffer
     let mut stringbuffer = String::new();
 
-    // storing data
-          
+    // storing data 
     let mut fileoutput = OpenOptions::new()
                             .write(true)
                             .create_new(true)
                             .append(true)
                             .open(&args.results)
                             .with_context(|| format!("Could not write to the output file `{}`", &args.results))?;
-    
 
     // Terminal prints for the user regarding their input
     let mut nb_reads = 0;
@@ -115,20 +90,19 @@ fn main() -> Result<()> {
             nb_bases += record.seq().len();
     }
     println!("Total number of genomes found: {}", nb_reads);
-    println!("Total number of basepairs to process: {}", nb_bases);
+    println!("Total number of bases to process: {}", nb_bases);
 
-    // iterate over fasta records
-
+    // iterate over fasta records to get primers
     for result in fasta::Reader::new(File::open(&args.genomes)?).records() {
         let record = result.expect("Error during fasta record parsing");
 
-        // count all N positions in fasta
+        // for each ambigous base positions in fasta
         for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
 
-        // iterate through the primer bed file
+        // iterate through the primer bed file and find suitable fwd primer
             for recordbed in bed::Reader::new(File::open(&args.primerbed)?).records() {
                 let recorddata = recordbed.expect("Error reading record.");
-                // start checking for each forward primer
+                // for each forward primer in bed file
                 match recorddata.strand() {
                     Some(Strand::Forward) => {
                         let primerend = recorddata.end() as usize;
@@ -136,19 +110,11 @@ fn main() -> Result<()> {
                             // find suitable matching reverse primer
                             for recordrevbed in bed::Reader::new(File::open(&args.primerbed)?).records() {
                                 let recordrevdata = recordrevbed.expect("Error reading record.");
-
                                 match recordrevdata.strand() { 
-                                    //Some(Strand::Forward) => continue,
                                     Some(Strand::Reverse) => {
-                                        
                                         let primerstart = recordrevdata.start() as usize;
-                                        //let primerfwdend = recorddata.name().unwrap();
-                                        //let primerrevname = recordrevdata.name().unwrap();
                                         if primerend < count && primerstart > count && primerstart - primerend < ( args.ampliconsize + 100 ) && primerstart - primerend > ( args.ampliconsize / 2 ) && count > 80  {
-                                            // dev helper
-                                            //println!("N position {} in fasta {}, fwd primer end at {}, rev primer starts at {} - [{} -- {}] - {}", count, record.id(), primerend , primerstart, primerfwdend, primerrevname, amplisize );
-                                            
-                                            // store the results into a strings buffer
+                                            // store the results into a string buffer
                                             stringbuffer.push_str(record.id());
                                             stringbuffer.push_str("\t");
                                             stringbuffer.push_str(recorddata.name().unwrap());
@@ -157,14 +123,11 @@ fn main() -> Result<()> {
                                             stringbuffer.push_str("\n");
                                         }   
                                     }
-                                    //Some(Strand::Unknown) => continue,
                                     _ => continue,
                                 }
                             }
                         }
                     }
-                    Some(Strand::Reverse) => continue,
-                    Some(Strand::Unknown) => continue,
                     _ => continue,
                 }
             }
@@ -177,25 +140,16 @@ fn main() -> Result<()> {
     let mut vec: Vec<&str> = l.collect();
     vec.sort() ;
     vec.dedup() ;
-    //vec.remove(0) ;
-    println!("{:?}", vec);
 
     // write vector to file
     for i in vec.iter() {
             if let Err(e) = writeln!(fileoutput, "{}", i) {
-
-                // if + take all - and "-integer" - "+integer" > (amplicon /2) && < (amplicon +100) if truuuuhh -> print to string buffer
-
-                // if - take all + and "-integer" - "+integer" > (amplicon /2) && < (amplicon +100) if truuuuhh -> print to string buffer
-            
-                // evtl. separate both string buffers (+ and - and compare them against each other)
-
             eprintln!("Couldn't write to file: {}", e);
             }                                                                                                                           
         }  
 
+    let elapsed = now.elapsed();
+    println!("Finished in {:.2?}", elapsed);
+
 Ok(())
 }
-
-// rust loops:
-// https://medium.com/qvault/loops-in-rust-breaking-from-nested-loops-26ab508fdce2
