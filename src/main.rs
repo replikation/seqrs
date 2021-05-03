@@ -119,11 +119,11 @@ fn main() -> Result<()> {
                                         {
                                             // store the results into a string buffer
                                             stringbuffer.push_str(record.id());
-                                            stringbuffer.push_str("\t");
+                                            stringbuffer.push('\t');
                                             stringbuffer.push_str(recorddata.name().unwrap());
-                                            stringbuffer.push_str("\t");
+                                            stringbuffer.push('\t');
                                             stringbuffer.push_str(recordrevdata.name().unwrap());
-                                            stringbuffer.push_str("\n");
+                                            stringbuffer.push('\n');
                                         }
                                     }
                                     _ => continue,
@@ -139,9 +139,9 @@ fn main() -> Result<()> {
 
     // Storing all strings into a vector to get rid of duplicates
     let l = stringbuffer;
-    let l = l.split("\n");
+    let l = l.split('\n');
     let mut vec: Vec<&str> = l.collect();
-    vec.sort();
+    vec.sort_unstable();
     vec.dedup();
 
     // write vector to file
