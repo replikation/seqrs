@@ -88,18 +88,20 @@ fn main() -> Result<()> {
 
     // open the fasta and bed file
     //let mut reader = fasta::Reader::new(File::open(&args.genomes)?);
-    let mut bedfile = bed::Reader::new(File::open(&args.primerbed)?);
+    //let mut bedfile = bed::Reader::new(File::open(&args.primerbed)?);
 
     // stringbuffer
     let mut stringbuffer = String::new();
 
-    // storing data       
+    // storing data
+          
     let mut fileoutput = OpenOptions::new()
                             .write(true)
                             .create_new(true)
                             .append(true)
                             .open(&args.results)
                             .with_context(|| format!("Could not write to the output file `{}`", &args.results))?;
+    
 
     // Terminal prints for the user regarding their input
     let mut nb_reads = 0;
@@ -117,79 +119,56 @@ fn main() -> Result<()> {
 
     // iterate over fasta records
 
-    for recordbed in bedfile.records() {
-        let recorddata = recordbed.expect("Error reading record.");
+    for result in fasta::Reader::new(File::open(&args.genomes)?).records() {
+        let record = result.expect("Error during fasta record parsing");
 
-        match recorddata.strand() {
-            // Forward Strand Primer
-            Some(Strand::Forward) => { 
-                // we feed the full fasta file records into the loop 
-                for result in fasta::Reader::new(File::open(&args.genomes)?).records() {
-                    let record = result.expect("Error during fasta record parsing");
+        // count all N positions in fasta
+        for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
 
-                    // development help
-                    /* println!("Proccessing fasta: {} with length {}", record.id(), record.seq().len());*/
-
-                    // we get every "N" position now and then we check for primers in the range of 1200bp
-                    for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
-                        // converting the data to usize to allow comparision
+        // iterate through the primer bed file
+            for recordbed in bed::Reader::new(File::open(&args.primerbed)?).records() {
+                let recorddata = recordbed.expect("Error reading record.");
+                // start checking for each forward primer
+                match recorddata.strand() {
+                    Some(Strand::Forward) => {
                         let primerend = recorddata.end() as usize;
-                        // we search now for appropriate forward primers
-                        if primerend < count && count - primerend > 0 && count - primerend < ( args.ampliconsize + 100 ) && count > 80  && record.seq().len() - count > 80 {
+                        if primerend < count && count - primerend < ( args.ampliconsize + 100 ) {
+                            // find suitable matching reverse primer
+                            for recordrevbed in bed::Reader::new(File::open(&args.primerbed)?).records() {
+                                let recordrevdata = recordrevbed.expect("Error reading record.");
 
-                            
-                            // store the results into a strings buffer
-                            stringbuffer.push_str(record.id());
-                            stringbuffer.push_str("\t");
-                            stringbuffer.push_str(&recorddata.end().to_string());
-                            stringbuffer.push_str("\t");
-                            stringbuffer.push_str("+");
-                            stringbuffer.push_str("\t");
-                            stringbuffer.push_str(recorddata.name().unwrap());
-                            stringbuffer.push_str("\n");
-
-                            // development help
-                            /* println!("## Fasta:{} has 'N' at position {} is greater than {} of FPrimer {:?}", record.id(), count, recorddata.end(), recorddata.name()); */
+                                match recordrevdata.strand() { 
+                                    //Some(Strand::Forward) => continue,
+                                    Some(Strand::Reverse) => {
+                                        
+                                        let primerstart = recordrevdata.start() as usize;
+                                        //let primerfwdend = recorddata.name().unwrap();
+                                        //let primerrevname = recordrevdata.name().unwrap();
+                                        if primerend < count && primerstart > count && primerstart - primerend < ( args.ampliconsize + 100 ) && primerstart - primerend > ( args.ampliconsize / 2 ) && count > 80  {
+                                            // dev helper
+                                            //println!("N position {} in fasta {}, fwd primer end at {}, rev primer starts at {} - [{} -- {}] - {}", count, record.id(), primerend , primerstart, primerfwdend, primerrevname, amplisize );
+                                            
+                                            // store the results into a strings buffer
+                                            stringbuffer.push_str(record.id());
+                                            stringbuffer.push_str("\t");
+                                            stringbuffer.push_str(recorddata.name().unwrap());
+                                            stringbuffer.push_str("\t");
+                                            stringbuffer.push_str(recordrevdata.name().unwrap());
+                                            stringbuffer.push_str("\n");
+                                        }   
+                                    }
+                                    //Some(Strand::Unknown) => continue,
+                                    _ => continue,
+                                }
+                            }
                         }
                     }
+                    Some(Strand::Reverse) => continue,
+                    Some(Strand::Unknown) => continue,
+                    _ => continue,
                 }
-            },
-                    // Reverse Strand Primer
-            Some(Strand::Reverse) => { 
-                // we feed the full fasta file records into the loop 
-                for result in fasta::Reader::new(File::open(&args.genomes)?).records() {
-                    let record = result.expect("Error during fasta record parsing");
-
-                    // development help
-                    /* println!("Proccessing fasta: {} with length {}", record.id(), record.seq().len());*/
-
-                    // we get every "N" position now and then we check for primers in the range of 1200bp   record.seq().len() - count > 100
-                    for (count, _v) in record.seq().iter().enumerate().filter(|&(_, c)| *c == 78) {
-                        // converting the data to usize to allow comparision
-                        let primerstart = recorddata.start() as usize;
-                        // we search now for appropriate forward primers
-                        if primerstart > count && primerstart - count > 0 && primerstart - count < ( args.ampliconsize + 100 ) && count > 80 && record.seq().len() - count > 80 {
-
-                            // store the results into a strings buffer
-                            stringbuffer.push_str(record.id());
-                            stringbuffer.push_str("\t");
-                            stringbuffer.push_str(&recorddata.start().to_string());
-                            stringbuffer.push_str("\t");
-                            stringbuffer.push_str("-");
-                            stringbuffer.push_str("\t");
-                            stringbuffer.push_str(recorddata.name().unwrap());
-                            stringbuffer.push_str("\n");
-                            
-                            // development help
-                            /* println!("## Fasta:{} has 'N' at position {} is greater than {} of FPrimer {:?}", record.id(), count, recorddata.start(), recorddata.name()); */
-                        }
-                    }
-                }
-            },
-
-            Some(Strand::Unknown) => println!("{:?}", recorddata.name()),
-            _ => continue,
             }
+        }
     }
 
     // Storing all strings into a vector to get rid of duplicates
@@ -199,7 +178,7 @@ fn main() -> Result<()> {
     vec.sort() ;
     vec.dedup() ;
     //vec.remove(0) ;
-    //println!("{:?}", vec);
+    println!("{:?}", vec);
 
     // write vector to file
     for i in vec.iter() {
@@ -214,8 +193,8 @@ fn main() -> Result<()> {
             eprintln!("Couldn't write to file: {}", e);
             }                                                                                                                           
         }  
-        
-    Ok(())
+
+Ok(())
 }
 
 // rust loops:
