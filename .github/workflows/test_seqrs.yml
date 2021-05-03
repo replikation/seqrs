@@ -9,7 +9,6 @@ jobs:
       matrix:
         rust:
           - stable
-          - beta
 
     steps:
       - uses: actions/checkout@v2
