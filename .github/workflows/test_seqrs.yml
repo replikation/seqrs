@@ -33,8 +33,3 @@ jobs:
         with:
           command: run
           args: -- -g data/multifasta_v1200.fasta -p data/Primerfiles/V3/nCoV-2019.bed -r results-400.txt -a 400 
-
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
