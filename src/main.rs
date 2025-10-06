@@ -47,10 +47,6 @@ struct Argparser {
     ampliconsize: usize,
 }
 
-// Errorcodes for string
-#[derive(Debug)]
-struct CustomError(String);
-
 /*
 The main function
 */
