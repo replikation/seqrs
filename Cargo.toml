@@ -10,4 +10,4 @@ edition = "2018"
 structopt = "0.3.13"
 anyhow = "1.0"
 bio = "0.33.0"
-bio-types = { version = "0.11.0", package = "bio-types" }
+bio-types = "1.0.4"
